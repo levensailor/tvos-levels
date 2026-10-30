@@ -1,0 +1,42 @@
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+config/tracks.json
+
+# Python virtual environments and caches
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Generated logs
+logs/
+*.log
+*.log.*
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+*.whl
+
+# Xcode derived data and user state
+DerivedData/
+xcuserdata/
+*.xcuserstate
+*.xcresult
+*.xcarchive
+*.ipa
+BandLevels/Config/DeveloperSettings.xcconfig
+
+# Local tooling state
+.DS_Store
+.cursor/
+.tmp/
