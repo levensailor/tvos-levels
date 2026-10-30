@@ -139,14 +139,14 @@ class LogicGainSource:
     async def _poll_session(self) -> None:
         from mcp import ClientSession, StdioServerParameters
         from mcp.client.stdio import stdio_client
-        from pydantic import AnyUrl
 
         params = StdioServerParameters(
             command=self._settings.logic_mcp_command,
             args=list(self._settings.logic_mcp_args),
             env={"LOGIC_PRO_BUNDLE_ID": self._settings.logic_pro_bundle_id},
         )
-        uri = AnyUrl(self._settings.logic_tracks_resource_uri)
+        # mcp>=2 types ReadResourceRequestParams.uri as str; a pydantic AnyUrl fails validation.
+        uri = self._settings.logic_tracks_resource_uri
         logger.info("Starting Logic Pro MCP: %s", self._settings.logic_mcp_command)
         async with stdio_client(params) as (read_stream, write_stream):
             async with ClientSession(read_stream, write_stream) as session:
