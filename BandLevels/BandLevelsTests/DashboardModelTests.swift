@@ -14,7 +14,8 @@ struct DashboardModelTests {
         let model = makeModel()
         #expect(model.slots.count == 16)
         #expect(model.rows.count == 2)
-        #expect(model.rows.allSatisfy { $0.count == 8 })
+        let rowsHaveEight = model.rows.allSatisfy { $0.count == 8 }
+        #expect(rowsHaveEight)
         #expect(model.populatedCount == 0)
     }
 
@@ -23,8 +24,10 @@ struct DashboardModelTests {
         #expect(model.ingest(Fixtures.snapshotJSON()))
         model.applyPendingSnapshot()
         #expect(model.populatedCount == 13)
-        #expect(model.slots.prefix(13).allSatisfy(\.isPopulated))
-        #expect(model.slots.suffix(3).allSatisfy { !$0.isPopulated })
+        let firstThirteenPopulated = model.slots.prefix(13).allSatisfy { $0.isPopulated }
+        let lastThreeAvailable = model.slots.suffix(3).allSatisfy { !$0.isPopulated }
+        #expect(firstThirteenPopulated)
+        #expect(lastThreeAvailable)
         #expect(model.rows[1].map(\.number) == Array(9...16))
         #expect(model.sequence == 7)
     }
@@ -65,7 +68,8 @@ struct DashboardModelTests {
         model.applyPendingSnapshot()
         let track = try #require(model.slots[0].track)
         #expect(MetricKind.allCases == [.gain, .vu, .dbfs, .lufs])
-        #expect(MetricKind.allCases.allSatisfy { $0.value(in: track) != nil })
+        let everyMetricPresent = MetricKind.allCases.allSatisfy { $0.value(in: track) != nil }
+        #expect(everyMetricPresent)
         let periods = try #require(model.periods)
         #expect(periods.vuIntegrationMs == 300)
         #expect(PeriodField.allCases.count == 6)
