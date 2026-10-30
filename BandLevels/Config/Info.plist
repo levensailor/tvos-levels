@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDisplayName</key>
+	<string>$(BAND_LEVELS_DISPLAY_NAME)</string>
+	<key>BandLevelsBridgeHost</key>
+	<string>$(BAND_LEVELS_BRIDGE_HOST)</string>
+	<key>BandLevelsBridgePort</key>
+	<string>$(BAND_LEVELS_BRIDGE_PORT)</string>
+	<key>BandLevelsStreamPath</key>
+	<string>$(BAND_LEVELS_STREAM_PATH)</string>
+	<key>BandLevelsPeriodsPath</key>
+	<string>$(BAND_LEVELS_PERIODS_PATH)</string>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
+	</dict>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>Band Levels connects to the audio-level bridge on your local network to show live track meters.</string>
+</dict>
+</plist>

@@ -1,0 +1,15 @@
+// Shared signing and bridge-connection defaults for every target.
+// Copy DeveloperSettings.example.xcconfig to DeveloperSettings.xcconfig (gitignored)
+// to set your Apple Developer team, bundle identifier prefix, and bridge address.
+
+BAND_LEVELS_DISPLAY_NAME = Band Levels
+BAND_LEVELS_BUNDLE_ID_PREFIX = io.github.levensailor
+DEVELOPMENT_TEAM =
+PRODUCT_BUNDLE_IDENTIFIER = $(BAND_LEVELS_BUNDLE_ID_PREFIX).BandLevels
+
+BAND_LEVELS_BRIDGE_HOST = localhost
+BAND_LEVELS_BRIDGE_PORT = 8000
+BAND_LEVELS_STREAM_PATH = /api/v1/stream
+BAND_LEVELS_PERIODS_PATH = /api/v1/periods
+
+#include? "DeveloperSettings.xcconfig"

@@ -36,6 +36,9 @@ xcuserdata/
 *.ipa
 BandLevels/Config/DeveloperSettings.xcconfig
 
+# Satoshi (ITF Free Font License) may be embedded in the app but not redistributed publicly
+BandLevels/BandLevels/Resources/Fonts/Satoshi-*.ttf
+
 # Local tooling state
 .DS_Store
 .cursor/

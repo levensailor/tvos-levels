@@ -92,3 +92,55 @@ jobs:
             [ -f "$file" ] && { echo "== $file"; cat "$file"; }
           done
           exit 0
+
+  tvos:
+    name: tvOS app (Swift 6)
+    runs-on: macos-15
+    timeout-minutes: 60
+    env:
+      PROJECT: BandLevels/BandLevels.xcodeproj
+      SCHEME: BandLevels
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch Satoshi (falls back to bundled Inter when unavailable)
+        run: scripts/fetch-fonts.sh || echo "Satoshi download failed; the app will use Inter"
+
+      - name: Toolchain
+        run: |
+          xcodebuild -version
+          swift --version
+          xcodebuild -project "$PROJECT" -scheme "$SCHEME" -showBuildSettings -destination 'generic/platform=tvOS' \
+            | grep -E '^\s+(SWIFT_VERSION|SDKROOT|TVOS_DEPLOYMENT_TARGET|CODE_SIGN_STYLE|PRODUCT_BUNDLE_IDENTIFIER) ='
+
+      - name: Select Apple TV simulator
+        id: simulator
+        run: echo "udid=$(scripts/ci/pick-tvos-simulator.sh)" >> "$GITHUB_OUTPUT"
+
+      - name: Unit tests on Apple TV simulator
+        run: |
+          set -o pipefail
+          xcodebuild test \
+            -project "$PROJECT" -scheme "$SCHEME" \
+            -destination "id=${{ steps.simulator.outputs.udid }}" \
+            -derivedDataPath build/DerivedData \
+            -resultBundlePath build/BandLevelsTests.xcresult \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: Release build for Apple TV hardware (unsigned)
+        run: |
+          set -o pipefail
+          xcodebuild build \
+            -project "$PROJECT" -scheme "$SCHEME" \
+            -configuration Release \
+            -destination 'generic/platform=tvOS' \
+            -derivedDataPath build/DerivedData \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO
+
+      - name: Upload test results
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tvos-test-results
+          path: build/BandLevelsTests.xcresult
+          if-no-files-found: ignore

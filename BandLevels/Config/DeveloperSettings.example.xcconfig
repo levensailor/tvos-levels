@@ -1,0 +1,9 @@
+// Copy to DeveloperSettings.xcconfig (gitignored) and fill in your values.
+// Find your Team ID at https://developer.apple.com/account under Membership details.
+
+DEVELOPMENT_TEAM = ABCDE12345
+BAND_LEVELS_BUNDLE_ID_PREFIX = com.example.yourname
+
+// LAN address of the Mac running the bridge (IP address or hostname.local)
+BAND_LEVELS_BRIDGE_HOST = 192.168.1.20
+BAND_LEVELS_BRIDGE_PORT = 8000
