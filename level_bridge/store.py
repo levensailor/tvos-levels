@@ -94,7 +94,9 @@ class LevelStore:
             current = self._sources[name]
             if current.connected == connected and current.detail == detail:
                 return
-            self._sources[name] = current.model_copy(update={"connected": connected, "detail": detail})
+            self._sources[name] = current.model_copy(
+                update={"connected": connected, "detail": detail}
+            )
             self._revision += 1
 
     def _set_metrics(self, slot: int, metrics: Mapping[str, float], timestamp: float) -> None:

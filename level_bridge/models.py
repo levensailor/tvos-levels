@@ -93,7 +93,8 @@ class TrackLevelInput(BaseModel):
         return self
 
     def metrics(self) -> dict[str, float]:
-        return {name: getattr(self, name) for name in METRIC_FIELDS if getattr(self, name) is not None}
+        values = {name: getattr(self, name) for name in METRIC_FIELDS}
+        return {name: value for name, value in values.items() if value is not None}
 
 
 class LevelUpdate(BaseModel):
