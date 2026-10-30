@@ -1,0 +1,1 @@
+"""Level input adapters."""
