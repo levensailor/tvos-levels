@@ -1,0 +1,94 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  bridge:
+    name: Bridge service
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Lint
+        run: uv run ruff check .
+
+      - name: Unit tests
+        run: uv run pytest
+
+      - name: Service starts on port 8000 by default
+        run: |
+          scripts/run-service.sh > service-default.out 2>&1 &
+          for attempt in $(seq 1 60); do
+            curl -fsS http://127.0.0.1:8000/health && break
+            sleep 1
+          done
+          curl -fsS http://127.0.0.1:8000/health
+
+      - name: Valid payload updates the matching track; invalid payload is rejected and logged
+        run: |
+          curl -fsS -X POST http://127.0.0.1:8000/api/v1/levels \
+            -H 'content-type: application/json' \
+            -d '{"schema_version":1,"source":"ci","tracks":[{"track_id":"vox","gain":0.8,"vu":-1.5,"dbfs":-6.2,"lufs":-14.3}]}'
+          curl -fsS http://127.0.0.1:8000/api/v1/snapshot \
+            | python3 -c 'import json,sys; t=json.load(sys.stdin)["tracks"][0]; assert (t["slot"], t["gain"], t["lufs"]) == (1, 0.8, -14.3), t; print("slot 1 updated:", t)'
+          status=$(curl -s -o /dev/null -w '%{http_code}' -X POST http://127.0.0.1:8000/api/v1/levels \
+            -H 'content-type: application/json' \
+            -d '{"schema_version":1,"source":"ci","tracks":[{"track_id":"vox","gain":7}]}')
+          test "$status" = "422"
+          grep -q "Rejected POST /api/v1/levels" logs/app.log
+          grep -E "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9:]{8}\.[0-9]{3}-0[45]:00 \[WARNING\] api\.py:[0-9]+ reject_invalid - Rejected" logs/app.log
+
+      - name: Stop default-port service
+        if: always()
+        run: pkill -f "uvicorn main:app" || true
+
+      - name: Service honors PORT
+        run: |
+          sleep 2
+          PORT=8123 scripts/run-service.sh > service-custom.out 2>&1 &
+          for attempt in $(seq 1 60); do
+            curl -fsS http://127.0.0.1:8123/health && break
+            sleep 1
+          done
+          curl -fsS http://127.0.0.1:8123/health
+          if curl -fsS http://127.0.0.1:8000/health; then echo "port 8000 should be free"; exit 1; fi
+          pkill -f "uvicorn main:app" || true
+
+      - name: Service honors PORT from .env via python-dotenv
+        run: |
+          sleep 2
+          printf 'PORT=8124\n' > .env
+          scripts/run-service.sh > service-dotenv.out 2>&1 &
+          for attempt in $(seq 1 60); do
+            curl -fsS http://127.0.0.1:8124/health && break
+            sleep 1
+          done
+          curl -fsS http://127.0.0.1:8124/health
+          pkill -f "uvicorn main:app" || true
+          rm .env
+
+      - name: Service output
+        if: always()
+        run: |
+          for file in service-*.out logs/app.log; do
+            [ -f "$file" ] && { echo "== $file"; cat "$file"; }
+          done
+          exit 0
