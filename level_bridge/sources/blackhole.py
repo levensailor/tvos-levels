@@ -93,6 +93,15 @@ class BlackHoleSource:
             if target in str(device.get("name", "")).casefold()
             and int(device.get("max_input_channels", 0)) > 0
         ]
+        # region agent log
+        try:
+            import json as _j
+            _devs = [{"index": i, "name": str(d.get("name")), "in": int(d.get("max_input_channels", 0)), "out": int(d.get("max_output_channels", 0)), "hostapi": d.get("hostapi"), "sr": d.get("default_samplerate")} for i, d in enumerate(sd.query_devices())]
+            with open("/Users/levensailor/dev/tvos-levels/.cursor/debug-da6e9b.log", "a") as _f:
+                _f.write(_j.dumps({"sessionId": "da6e9b", "runId": "run2", "hypothesisId": "G,I", "location": "blackhole.py:_find_device", "message": "CoreAudio device list and substring matches", "data": {"target": target, "devices": _devs, "match_indexes": [i for i, _ in matches], "default_devices": list(sd.default.device) if hasattr(sd.default, "device") else None}, "timestamp": int(time.time() * 1000)}, default=str) + "\n")
+        except Exception:
+            pass
+        # endregion
         if not matches:
             self._fail(f"input device {self._settings.blackhole_device_name!r} not found")
             return None
@@ -120,11 +129,33 @@ class BlackHoleSource:
         last_report = time.monotonic()
         reported_flags = 0
         reported_drops = 0
+        # region agent log
+        _dbg_peak = None
+        _dbg_last = time.monotonic()
+        _dbg_blocks = 0
+        # endregion
         while not self._stop.is_set():
             try:
                 block = self._queue.get(timeout=QUEUE_TIMEOUT_SECONDS)
             except queue.Empty:
                 continue
+            # region agent log
+            try:
+                _blk = np.max(np.abs(block), axis=0)
+                _dbg_peak = _blk if _dbg_peak is None else np.maximum(_dbg_peak, _blk)
+                _dbg_blocks += 1
+                if time.monotonic() - _dbg_last >= 3.0:
+                    import json as _j
+                    _pk = [round(float(20 * np.log10(max(v, 1e-9))), 1) for v in _dbg_peak]
+                    _active = [i + 1 for i, v in enumerate(_pk) if v > -90.0]
+                    with open("/Users/levensailor/dev/tvos-levels/.cursor/debug-da6e9b.log", "a") as _f:
+                        _f.write(_j.dumps({"sessionId": "da6e9b", "runId": "run2", "hypothesisId": "F,G", "location": "blackhole.py:_run", "message": "per-input-channel peak dBFS over last ~3s (index 0 = channel 1)", "data": {"block_shape": list(block.shape), "blocks": _dbg_blocks, "peak_dbfs_by_channel": _pk, "channels_with_signal": _active, "channel_map": {str(k): list(v) for k, v in self._store.layout.audio_channel_map().items()}}, "timestamp": int(time.time() * 1000)}, default=str) + "\n")
+                    _dbg_peak = None
+                    _dbg_blocks = 0
+                    _dbg_last = time.monotonic()
+            except Exception:
+                pass
+            # endregion
             try:
                 analyzer.process(block)
             except ValueError as exc:
